@@ -1,14 +1,14 @@
-# Create ec2 instance
+# Create EC2 instances
 resource "aws_instance" "vm" {
-    count = 2
-    ami           = var.instance_ami
-    instance_type = var.ec2_instance_type
-    key_name = aws_key_pair.testkey.id
-    subnet_id = [var.private_subnet_id, var.public_subnet_id][count.index]
-    vpc_security_group_ids = [aws_security_group.sg-group.id]
+  count                  = 2
+  ami                    = var.instance_ami
+  instance_type          = var.ec2_instance_type
+  key_name               = aws_key_pair.keypair.id
+  subnet_id              = element([var.private_subnet_id, var.public_subnet_id], count.index)
+  vpc_security_group_ids = [aws_security_group.sg-group.id]
 
   tags = {
-    Name = var.instance_name
+    Name        = var.instance_name
     environment = var.environment
   }
 
@@ -28,12 +28,9 @@ resource "aws_instance" "vm" {
 EOF
 }
 
-#######################################################################################################################
-######################################################################################################################
-
 # Create a key pair
-resource "aws_key_pair" "testkey" {
-  key_name = var.key_name
+resource "aws_key_pair" "keypair" {
+  key_name   = var.key_name
   public_key = tls_private_key.ssh_key.public_key_openssh
 }
 
@@ -45,57 +42,37 @@ resource "tls_private_key" "ssh_key" {
 
 # Put the private key in a local file
 resource "local_file" "testkey_private" {
-  content = tls_private_key.ssh_key.private_key_pem
+  content  = tls_private_key.ssh_key.private_key_pem
   filename = var.key_filename
 }
 
-
-######################################################################################################################
-######################################################################################################################
-
-
-# CREATE A SECURITY GROUP
+# Create a security group
 resource "aws_security_group" "sg-group" {
-  name        = var.security-name
+  name        = var.security_name
   vpc_id      = var.vpc_id_id
-  
 
-  
   ingress {
-    from_port        = 22
-    to_port          = 22
-    protocol         = "tcp"
-    cidr_blocks      = ["0.0.0.0/0"]
-    ipv6_cidr_blocks = ["::/0"]
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   ingress {
-    from_port        = 80
-    to_port          = 80
-    protocol         = "tcp"
-    cidr_blocks      = ["0.0.0.0/0"]
-    ipv6_cidr_blocks = ["::/0"]
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
-    from_port        = 0
-    to_port          = 0
-    protocol         = "-1"
-    cidr_blocks      = ["0.0.0.0/0"]
-    ipv6_cidr_blocks = ["::/0"]
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   tags = {
     Name = "allow_tcp"
   }
 }
-
-
-
-
-
-
-
-
-
-
