@@ -1,146 +1,103 @@
-# PROJECT OVERVIEW
+# Infrastructure Deployment Documentation
 
-Below is a brief description of the content of each directory. 
+This Terraform project deploys and manages AWS infrastructure for creating EC2 instances and associated networking components. The infrastructure is modularized into two main components: `EC2_Instance` and `network`. The `EC2_Instance` module handles the creation of EC2 instances, while the `network` module manages the networking components such as VPC, subnets, internet gateway, and route tables..
 
-## CHILD MODULES
-This directory contains sub-directories called **EC2_Instance** and **Network**.
+## Project Overview
 
-### EC2-INSTANCE
-This directory contains the main configuration file **(main.tf)**, the **variable.tf** file that accepts inputs that will be passed to the main.tf, and the **output.tf** file that is used to output the value of a resource block.
+The infrastructure is divided into two main modules: `EC2_Instance` and `network`. The `EC2_Instance` module handles the creation of EC2 instances, while the `network` module takes care of VPC, subnets, internet gateways, and route tables.
 
-### Network 
-This directory contains a main.tf file and variable.tf file is similar to EC2Instance but differs in that it has **data.tf** file which is used to query aws infrastructure so we can know the available availability_zones and attach each subnet to each availability zone.
+## Directory Structure
+```
+project-root/
+|-- child-modules/
+|   |-- EC2-Instance/
+|   |   |-- main.tf
+|   |   |-- variables.tf
+|   |   |-- outputs.tf
+|
+|   |-- network/
+|       |-- main.tf
+|       |-- variables.tf
+|       |-- outputs.tf
+|   |-- development
+        |-- providers.tf
+        |-- root-module.tf
+    |-- production
+        |-- providers.tf
+        |-- root-module.tf
+```
+### EC2_Instance Module
 
-## DEVELOPMENT & PRODUCTION
-These are different environment that host the root modules. The root modules call the child modules before the infrastructure can be created. The two files in each of these environment are:
-  - root-modules.tf
-  - provider.tf
-The provider.tf specifies the region and the provider where I want to create the infrastructure. In this case it was AWS, while the root modules specifies the values that will be passed as inputs in the variable.tf file in the child modules and later called upon by the main.tf in the EC2-Instance and network.
+This module creates EC2 instances with the specified configuration. The variables include:
 
+- `instance_name`: A unique name for the EC2 instance.
+- `instance_ami`: The Amazon Machine Image (AMI) for the instance.
+- `ec2_instance_type`: The type of EC2 instance, e.g., "t2.micro".
+- `key_name`: The name of the key pair for SSH access.
+- `key_filename`: The path to the SSH private key file.
+- `security_name`: The name of the security group.
+- `vpc_id_id`: The VPC ID from the `network` module.
+- `private_subnet_id`: The private subnet ID from the `network` module.
+- `public_subnet_id`: The public subnet ID from the `network` module.
+- `environment`: The deployment environment, either "dev" or "prod".
 
-# STAGES OF EXECUTION
-*The first stage was to create the directories specifying root-modules iin the different environment and child modules because the scripts had to be modularized.*
+### Network Module
 
-*The second stage was to create a vpc for the various environments. This required:*
-- creating a vpc and attaching a cidr block.
-- creating an internet gateway and attaching it to the vpc.
-- creating a public and private subnet in different availability zones.
-- creating route tables for the public subnet.
-- associating the public subnet with the internet gateway.
+This module handles the creation of VPC, subnets, internet gateways, and route tables. The variables include:
 
-*The third step was to create an ec2 and the step by step process involved were:*
-- giving the ec2 a name.
-- selecting an ami image. In this case(ubuntu)
-- selecting an instance type. (In this case t2.micro)
-- creating a key pair.
-- editing the network settings like:
-      
-      - attaching it to a subnet
-      - auto assigning a public IP to the instance that was attached to the public subnet.
-      - creating a security group(setting the inbound and outbound rules)
-- inputting different lines of code to install ansible and docker in the user section.
+- `environment`: The deployment environment, either "dev" or "prod".
+- `cidr_block`: The CIDR block for the VPC.
+- `vpc_name`: A unique name for the VPC.
+- `public_subnet`: The CIDR block for the public subnet.
+- `private_subnet`: The CIDR block for the private subnet.
 
+## Variables (variables.tf)
 
+This file defines the input variables used in the Terraform configuration. Variables include information such as instance names, AMI IDs, instance types, key names, and networking details.
 
-## Images of resources created in eu-west-1
-### vpc image
-![vpc](./images/vpc-west.png)
+## Outputs (outputs.tf)
 
-### Internet gateway
-*Internet gateway attached to the vpc*
-![igw](./images/igw-west.png)
+The outputs file defines the values that are useful to reference or export after the infrastructure is provisioned. Outputs may include instance details, subnet IDs, or other relevant information.
 
-### Subnets Image 
-*Public subnet Image showing the cidr block and availability zone attached to it*
-![public-subnet](./images/subnet-west.png)
+## Stages of Execution
 
-*Private subnet Image showing the cidr block and availability zone attached to it*
-![private-subnet](./images/private-subnet-west.png)
+1. **Module Initialization:** Execute `terraform init` in each module directory to initialize the Terraform configurations.
 
-### Images of route tables
-*Route tables were created and associated with the public subnet*.
-![route](./images/subnetbassociation-west.png)
+2. **Review and Verification:** Use `terraform plan` to review and verify the configuration before deployment.
 
-*Routes were created to attach the public subnet to the internet gateway*.
-![route-table](./images/subnet%20route-west.png)
+3. **Infrastructure Deployment:** Execute `terraform apply` to deploy the infrastructure. Confirm by typing `yes` when prompted.
 
-Note: You can associate the private subnet to the route table but you would have to attach it to a nat gateway so the private servers can receive request from the internet.
+4. **Infrastructure Destruction:** If needed, execute `terraform destroy` to remove the deployed infrastructure.
 
+## Execution Examples
 
-## Images of resources created in eu-central-1
-### vpc image
-![vpc](./images/vpc-central.png)
+### Development Environment
 
-### Internet gateway
-*Internet gateway attached to the vpc*
-![igw](./images/igw-central.png)
+```bash
+cd development
+terraform init
+terraform plan
+terraform apply
+```
 
-### Subnets Image 
-*Public subnet Image showing the cidr block and availability zone attached to it*
-![public-subnet](./images/public-subnet-central.png)
+### Production Environment
 
-*Private subnet Image showing the cidr block and availability zone attached to it*
-![private-subnet](./images/private-subnet-central.png)
+```bash
+cd production
+terraform init
+terraform plan
+terraform apply
+```
 
-### Images of route tables
-*Route tables were created and associated with the public subnet*.
-![route](./images/subnetbassociation-central.png)
+## Success and Outputs
 
-*Routes were created to attach the public subnet to the internet gateway*.
-![route-table](./images/route-central.png)
+Upon successful execution, the infrastructure will be created, including VPCs, subnets, EC2 instances, security groups, and key pairs.
 
-Note: You can associate the private subnet to the route table but you would have to attach it to a nat gateway so the private servers can receive request from the internet
+<!-- Images and information about the resources created can be found in the respective `images` directories for each environment. -->
 
+## Additional Notes
 
-## Images of ec2 created in eu-west-1
-*ec2 image showing the private server ip and instance type*.
-![private-ec2](./images/ec2-private-west.png)
+- Ensure AWS credentials are configured properly for Terraform..
+- Always follow best practices for managing sensitive information like private keys.
 
-*Ec2 image showing the private server ip, instance type and the public ip assigned by AWS*.
-![public-ec2](./images/ec2-public-west.png)
-
-## Images of the ec2 created in eu-central-1
-*Ec2 image showing the private server ip and instance type*.
-![private-ec2](./images/private%20ec2-central.png)
-
-*Ec2 image showing the private server ip, instance type and the public ip assigned by AWS*.
-![public-ec2](./images/public-ec2-central.png)
-
-
-## Image of the key in eu-west-1 and eu-central-1
-*Key-pair created to enable ssh into the instances*.
-![key](./images/key-pair-west.png)
-
-## Image of the security group in eu-west-1
-*Security group image showing the inbounds rules for http(80) and ssh(22) for IpV4 address*.
-![sg-west](./images/sg-west.png)
-
-## Image of the security group in eu-central-1
-*Security group image showing the inbounds rules for http(80) and ssh(22) for IpV4 address*.
-![sg-central](./images/sg-central.png)
-
-## Images of docker and ansible installed on the ec2 in eu-west-1
-*Image showing the version of ansible and docker installed*.
-![ansible](./images/ansible-version-west.png)
-![docker](./images/docker-version-west.png)
-
-## Images of docker and ansible installed on the ec2 in eu-central-1
-*Image showing the version of ansible and docker installed*.
-![ansible](./images/ansible-version-central.png)
-![docker](./images/docker-version-central.png)
-
-
-
-# PROCESS OF DEPLOYMENT
-To deploy this infrastructure, you will need an AWS account and the necessary permissions set up.
-You can use the following commands:
-- `terraform init` to initialise your infrastructure.
-- `terraform plan` to review and verify your configuration.
-- `terraform apply` to deploy your infrastructure
-- `terraform destroy` to destroy your infrastructure.
-
-You also need to create a `tfvars.tf` file to create your own values for the variables specified in the root-modules.tf if you decide to deploy this script.
-
-To run the following commands right click on production and development directory and open with a terminal. Note: Do it one after the other.
-
-
+This documentation serves as a guide for deploying, managing, and destroying the infrastructure. Follow the specified steps for a seamless experience.
